@@ -17,7 +17,7 @@ var (
 
 func main() {
 	config.Init(&version, &commit)
-	conf := config.Get()
+	conf := config.GetRouterConfig()
 
 	srv := &dns.Server{Addr: conf.GetListenAddress(), Net: "udp"}
 	srv.Handler = &server.DNSHandler{}

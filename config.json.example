@@ -1,0 +1,23 @@
+{
+	"host": "127.0.0.1",
+	"port": 5353,
+	"log": {
+		"level": "info",
+		"format": "json"
+	}
+	"default_upstream": "1.1.1.1",
+	"upstreams": [
+		{
+			"regex": ".*\\.example.com",
+			"upstream": "8.8.8.8"
+		},
+		{
+			"regex": ".*\\.localdomain",
+			"upstream": "10.0.0.1"
+		},
+		{
+			"regex": ".*\\.(office\\.lan|myoffice\\.com)",
+			"upstream": "10.0.0.1"
+		}
+	]
+}

@@ -6,4 +6,4 @@ set -e
 export DNSROUTER_PORT=5353
 export DNSROUTER_LOG_LEVEL=debug
 
-./bin/dnsrouter
+./bin/dnsrouter -c "$(pwd)/config.json" -v

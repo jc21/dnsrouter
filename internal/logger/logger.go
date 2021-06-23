@@ -55,7 +55,7 @@ func NewLogger() *Logger {
 func NewConfig() Config {
 	return Config{
 		LogThreshold: InfoLevel,
-		Formatter:    "json",
+		Formatter:    "nice",
 	}
 }
 

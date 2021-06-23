@@ -3,7 +3,6 @@ package server
 import (
 	"fmt"
 	"net"
-	"regexp"
 
 	"dnsrouter/internal/config"
 	"dnsrouter/internal/logger"
@@ -47,13 +46,12 @@ func (this *DNSHandler) ServeDNS(w dns.ResponseWriter, r *dns.Msg) {
 }
 
 func getDNSServerFromLookup(domain string) string {
-	conf := config.Get()
+	conf := config.GetRouterConfig()
 	dnsServer := conf.DefaultUpstream
 
 	if len(conf.Upstreams) > 0 {
 		for _, upstream := range conf.Upstreams {
-			r := regexp.MustCompile(fmt.Sprintf("^%s\\.$", upstream.HostRegex))
-			if found := r.MatchString(domain); found {
+			if found := upstream.CompiledRegex.MatchString(domain); found {
 				dnsServer = upstream.DNSServer
 				break
 			}
