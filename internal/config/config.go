@@ -1,7 +1,11 @@
 package config
 
 import (
-	golog "log"
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
+	"os"
+	"path"
 
 	"dnsrouter/internal/logger"
 
@@ -31,12 +35,13 @@ func Init(commit, version *string) {
 	arg.MustParse(&appArguments)
 
 	routerConfig = NewRouterConfig()
+
+	if appArguments.WriteConfig {
+		writeConfig()
+	}
 }
 
 func initLogger() {
-	// this removes timestamp prefixes from logs
-	golog.SetFlags(0)
-
 	if appArguments.Verbose {
 		logLevel = logger.DebugLevel
 	} else {
@@ -73,4 +78,27 @@ func getConfigFilename() string {
 // GetRouterConfig returns the configuration as read from a file
 func GetRouterConfig() *RouterConfig {
 	return &routerConfig
+}
+
+// writeConfig will write/amend the config file and exit
+func writeConfig() {
+	filename := getConfigFilename()
+	content, _ := json.MarshalIndent(routerConfig, "", " ")
+
+	// Make sure the parent folder exists
+	folder := path.Dir(filename)
+	dirErr := os.MkdirAll(folder, os.ModePerm)
+	if dirErr != nil {
+		logger.Error("ConfigWriteError", fmt.Errorf("Could not create config folder: %s: %s", path.Dir(filename), dirErr.Error()))
+		os.Exit(1)
+	}
+
+	err := ioutil.WriteFile(filename, content, 0600)
+	if err != nil {
+		logger.Error("ConfigWriteError", fmt.Errorf("Could not write config file: %s: %s", filename, err.Error()))
+		os.Exit(1)
+	}
+
+	logger.Info("Successfully wrote: %s", filename)
+	os.Exit(0)
 }

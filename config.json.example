@@ -8,6 +8,10 @@
 	"default_upstream": "1.1.1.1",
 	"upstreams": [
 		{
+			"regex": "local",
+			"nxdomain": true
+		},
+		{
 			"regex": ".*\\.example.com",
 			"upstream": "8.8.8.8"
 		},

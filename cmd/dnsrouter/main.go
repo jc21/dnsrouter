@@ -1,6 +1,7 @@
 package main
 
 import (
+	golog "log"
 	"os"
 
 	"dnsrouter/internal/config"
@@ -16,6 +17,9 @@ var (
 )
 
 func main() {
+	// this removes timestamp prefixes from logs
+	golog.SetFlags(0)
+
 	config.Init(&version, &commit)
 	conf := config.GetRouterConfig()
 

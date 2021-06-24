@@ -60,37 +60,50 @@ func (c *RouterConfig) GetListenAddress() string {
 // Load will load the config from file
 func (c *RouterConfig) Load() {
 	filename := getConfigFilename()
+	ok := true
 
 	// Make sure file exists
 	if _, err := os.Stat(filename); os.IsNotExist(err) {
-		logger.Error("ConfigFileError", fmt.Errorf("Configuration not found, expected to find it at %s", filename))
-		os.Exit(1)
+		logger.Warn("Config file not found, expected to find it at %s", filename)
+		ok = false
 	}
 
-	jsonFile, err := os.Open(path.Clean(filename))
-	if err != nil {
-		logger.Error("ConfigFileError", fmt.Errorf("Configuration could not be opened: %v", err.Error()))
-		os.Exit(1)
+	var jsonFile *os.File
+	var err error
+	var contents []byte
+
+	if ok {
+		jsonFile, err = os.Open(path.Clean(filename))
+		if err != nil {
+			logger.Warn("Config file could not be opened: %v", err.Error())
+			ok = false
+		}
 	}
 
-	contents, readErr := ioutil.ReadAll(jsonFile)
-	if readErr != nil {
-		logger.Error("ConfigFileError", fmt.Errorf("Configuration file could not be read: %v", readErr.Error()))
-		// nolint: errcheck, gosec
-		jsonFile.Close()
-		os.Exit(1)
+	if ok {
+		contents, err = ioutil.ReadAll(jsonFile)
+		if err != nil {
+			logger.Warn("Config file could not be read: %v", err.Error())
+			ok = false
+		}
 	}
 
-	unmarshalErr := json.Unmarshal(contents, &c)
-	if unmarshalErr != nil {
-		logger.Error("ConfigFileError", fmt.Errorf("Configuration file looks damaged"))
-		// nolint: errcheck, gosec
-		jsonFile.Close()
-		os.Exit(1)
+	if ok {
+		err = json.Unmarshal(contents, &c)
+		if err != nil {
+			logger.Warn("Config file looks damaged")
+			ok = false
+		}
 	}
 
 	// nolint: errcheck, gosec
-	jsonFile.Close()
+	if jsonFile != nil {
+		jsonFile.Close()
+	}
+
+	if !ok {
+		logger.Warn("Falling back to default configuration")
+	}
 }
 
 // CompileRegexes prepares the regexes given ahead of their usage
