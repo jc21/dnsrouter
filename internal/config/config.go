@@ -21,12 +21,12 @@ var (
 
 const defaultConfigFile = "/etc/dnsrouter/config.json"
 
-// GetConfig returns the ArgConfig
+// Init will parse arg vars and setup the config for the app
 func Init(commit, version *string) {
 	Version = *version
 	Commit = *commit
 
-	// nolint: errcheck
+	// nolint: errcheck, gosec
 	c.FromEnv().To(&appArguments)
 	arg.MustParse(&appArguments)
 

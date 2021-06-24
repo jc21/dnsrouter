@@ -10,9 +10,11 @@ import (
 	"github.com/miekg/dns"
 )
 
+// DNSHandler ...
 type DNSHandler struct{}
 
-func (this *DNSHandler) ServeDNS(w dns.ResponseWriter, r *dns.Msg) {
+// ServeDNS will handle incoming dns requests and forward them onwards
+func (hndlr *DNSHandler) ServeDNS(w dns.ResponseWriter, r *dns.Msg) {
 	c := new(dns.Client)
 
 	msg := dns.Msg{}

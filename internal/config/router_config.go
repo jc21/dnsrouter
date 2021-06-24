@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net"
 	"os"
+	"path"
 	"regexp"
 	"strconv"
 )
@@ -20,19 +21,20 @@ type RouterConfig struct {
 	DefaultUpstream string           `json:"default_upstream"`
 }
 
-// LogConfig ...
+// LogConfig is self explanatatory
 type LogConfig struct {
 	Format string `json:"format"`
 	Level  string `json:"level"`
 }
 
+// UpstreamConfig is a item for upstream configuration
 type UpstreamConfig struct {
 	HostRegex     string         `json:"regex"`
 	DNSServer     string         `json:"upstream"`
 	CompiledRegex *regexp.Regexp `json:"-"`
 }
 
-// NewRouterConfig ...
+// NewRouterConfig will create a new config instance and load it from the config file with defaults
 func NewRouterConfig() RouterConfig {
 	r := RouterConfig{
 		Host: "0.0.0.0",
@@ -54,7 +56,7 @@ func (c *RouterConfig) GetListenAddress() string {
 	return net.JoinHostPort(c.Host, strconv.Itoa(c.Port))
 }
 
-// GetRouterConfig returns the configuration as read from a file
+// Load will load the config from file
 func (c *RouterConfig) Load() {
 	filename := getConfigFilename()
 
@@ -64,28 +66,33 @@ func (c *RouterConfig) Load() {
 		os.Exit(1)
 	}
 
-	jsonFile, err := os.Open(filename)
+	jsonFile, err := os.Open(path.Clean(filename))
 	if err != nil {
 		logger.Error("ConfigFileError", fmt.Errorf("Configuration could not be opened: %v", err.Error()))
 		os.Exit(1)
 	}
 
-	defer jsonFile.Close()
-
 	contents, readErr := ioutil.ReadAll(jsonFile)
 	if readErr != nil {
 		logger.Error("ConfigFileError", fmt.Errorf("Configuration file could not be read: %v", readErr.Error()))
+		// nolint: errcheck, gosec
+		jsonFile.Close()
 		os.Exit(1)
 	}
 
 	unmarshalErr := json.Unmarshal(contents, &c)
 	if unmarshalErr != nil {
 		logger.Error("ConfigFileError", fmt.Errorf("Configuration file looks damaged"))
+		// nolint: errcheck, gosec
+		jsonFile.Close()
 		os.Exit(1)
 	}
+
+	// nolint: errcheck, gosec
+	jsonFile.Close()
 }
 
-// CompileRegexes prepares the regexes given
+// CompileRegexes prepares the regexes given ahead of their usage
 func (c *RouterConfig) CompileRegexes() {
 	if len(c.Upstreams) > 0 {
 		for idx, upstream := range c.Upstreams {

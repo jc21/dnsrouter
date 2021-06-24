@@ -28,5 +28,6 @@ func main() {
 		os.Exit(1)
 	}
 
+	// nolint: errcheck
 	defer srv.Shutdown()
 }
