@@ -31,6 +31,7 @@ type LogConfig struct {
 type UpstreamConfig struct {
 	HostRegex     string         `json:"regex"`
 	DNSServer     string         `json:"upstream"`
+	NXDomain      bool           `json:"nxdomain"`
 	CompiledRegex *regexp.Regexp `json:"-"`
 }
 

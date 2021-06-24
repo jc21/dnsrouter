@@ -14,14 +14,14 @@ pipeline {
 		label 'docker'
 	}
 	stages {
-		stage('Build') {
+		stage('Test') {
 			steps {
 				withCredentials([usernamePassword(credentialsId: 'oss-index-token', passwordVariable: 'NANCY_TOKEN', usernameVariable: 'NANCY_USER')]) {
 					sh './scripts/ci/test.sh'
 				}
 			}
 		}
-		stage('Test') {
+		stage('Build') {
 			steps {
 				sh './scripts/ci/build.sh'
 			}
