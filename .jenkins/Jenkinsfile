@@ -1,0 +1,59 @@
+@Library('jc21') _
+
+pipeline {
+	options {
+		buildDiscarder(logRotator(numToKeepStr: '5'))
+		disableConcurrentBuilds()
+		ansiColor('xterm')
+	}
+	environment {
+		BUILD_VERSION = getVersion()
+		BUILD_COMMIT  = getCommit()
+	}
+	agent {
+		label 'docker'
+	}
+	stages {
+		stage('Build') {
+			steps {
+				sh './scripts/ci/build.sh'
+			}
+		}
+		stage('Publish') {
+			when {
+				allOf {
+					branch 'master'
+					not {
+						equals expected: 'UNSTABLE', actual: currentBuild.result
+					}
+				}
+			}
+			steps {
+				dir(path: 'bin') {
+					archiveArtifacts(artifacts: '**/*', caseSensitive: true, onlyIfSuccessful: true)
+				}
+				githubRelease('jc21/dnsrouter', "$BUILD_VERSION", 'bin')
+			}
+		}
+	}
+	post {
+		success {
+			juxtapose event: 'success'
+			sh 'figlet "SUCCESS"'
+		}
+		failure {
+			juxtapose event: 'failure'
+			sh 'figlet "FAILURE"'
+		}
+	}
+}
+
+def getVersion() {
+	ver = sh(script: 'cat .version', returnStdout: true)
+	return ver.trim()
+}
+
+def getCommit() {
+	ver = sh(script: 'git log -n 1 --format=%h', returnStdout: true)
+	return ver.trim()
+}
