@@ -22,25 +22,23 @@ query to the office VPN `10.0.0.1`
 
 ## Configuration
 
-Copy the `config.json.example` file and adjust to your needs.
-
-Place this file anywhere you want, the default location is
-`/etc/dnsrouter/config.json`
-
-When running the `dnsrouter` binary, you can optionally specify the
-location of the configuration file like
+The command is able to write it's default configuration and exit:
 
 ```bash
-./dnsrouter -c /path/to/config.json
+./dnsrouter -w
+# optionally specify the file to write
+./dnsrouter -w -c /path/to/config.json
 ```
+
+Then it's up to you to edit this file to your liking. The default location is `/etc/dnsrouter/config.json`
+
+Refer to the `config.json.example` file for upstream routing examples.
 
 ## Building
 
 ```bash
 git clone https://github.com/jc21/dnsrouter.git
 cd dnsrouter
-BUILD_COMMIT=$(git rev-parse --short HEAD) \
-BUILD_VERSION=0.0.1 \
 ./scripts/build.sh
 ```
 
@@ -48,4 +46,17 @@ Binary will output to `bin/dnsrouter`
 
 ## Running
 
-Be aware that running on port 53 will require root permissions on Linux systems.
+```bash
+./dnsrouter
+# optionally specify the file to read
+./dnsrouter -c /path/to/config.json
+```
+
+Be aware that running on port `53` will require root permissions on Linux systems.
+
+After the service is running you just have to use it. Modify your network interface's DNS
+servers (or /etc/resolv.conf) to use the IP running `dnsrouter` ie `127.0.0.1` if it's
+the same machine.
+
+You may choose to run in verbose mode by specifying `-v` this will output each incoming
+DNS request and the determined forwarding DNS server.
