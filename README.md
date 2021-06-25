@@ -15,6 +15,46 @@ example `dnsmasq` will send DNS requests to all servers regardless
 of the rules and when an upstream DNS server is dropping connections
 it will hang the whole server.
 
+## Installation
+
+Only the following methods are available for installation. For all other systems, see Building below.
+
+### MacOS Homebrew
+
+Homebrew won't accept this package until it has higher reputation (stars, forks) so until then
+you'll have to use the development Formula and rebuild it to install it:
+
+```bash
+brew update
+cd $(brew --repo homebrew/core)
+git remote add jc21 https://github.com/jc21/homebrew-core.git
+git fetch --all
+git checkout jc21/dnsrouter
+brew install --build-from-source dnsrouter
+
+# Edit config which is located at:
+# /usr/local/etc/dnsrouter/config.json
+
+sudo brew services start dnsrouter
+
+# Switch back to homebrew-core master
+git checkout master
+```
+
+### Centos 8/Stream
+
+RPM's are built [here](https://github.com/jc21-rpm/dnsrouter) and hosted [here](https://yum.jc21.com).
+
+```bash
+sudo yum localinstall https://yum.jc21.com/jc21-yum.rpm
+sudo yum install dnsrouter
+
+# Edit config which is located at:
+# /etc/dnsrouter/config.json
+
+sudo systemctl enable dnsrouter --now
+```
+
 ## Configuration
 
 The command is able to write it's default configuration and exit:
