@@ -15,7 +15,7 @@ import (
 
 var (
 	appArguments ArgConfig
-	routerConfig RouterConfig
+	serverConfig ServerConfig
 	logLevel     logger.Level
 	// Commit is the git commit set by ldflags
 	Commit string
@@ -34,7 +34,7 @@ func Init(commit, version *string) {
 	c.FromEnv().To(&appArguments)
 	arg.MustParse(&appArguments)
 
-	routerConfig = NewRouterConfig()
+	serverConfig = NewServerConfig()
 
 	if appArguments.WriteConfig {
 		writeConfig()
@@ -45,7 +45,7 @@ func initLogger() {
 	if appArguments.Verbose {
 		logLevel = logger.DebugLevel
 	} else {
-		switch routerConfig.Log.Level {
+		switch serverConfig.Log.Level {
 		case "debug":
 			logLevel = logger.DebugLevel
 		case "warn":
@@ -59,7 +59,7 @@ func initLogger() {
 
 	err := logger.Configure(&logger.Config{
 		LogThreshold: logLevel,
-		Formatter:    routerConfig.Log.Format,
+		Formatter:    serverConfig.Log.Format,
 	})
 
 	if err != nil {
@@ -75,15 +75,15 @@ func getConfigFilename() string {
 	return defaultConfigFile
 }
 
-// GetRouterConfig returns the configuration as read from a file
-func GetRouterConfig() *RouterConfig {
-	return &routerConfig
+// GetServerConfig returns the configuration as read from a file
+func GetServerConfig() *ServerConfig {
+	return &serverConfig
 }
 
 // writeConfig will write/amend the config file and exit
 func writeConfig() {
 	filename := getConfigFilename()
-	content, _ := json.MarshalIndent(routerConfig, "", " ")
+	content, _ := json.MarshalIndent(serverConfig, "", " ")
 
 	// Make sure the parent folder exists
 	folder := path.Dir(filename)

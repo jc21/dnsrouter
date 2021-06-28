@@ -75,23 +75,29 @@ Given the following configuration:
 
 ```json
 {
-  "default_upstream": "1.1.1.1",
-  "upstreams": [
+  "servers": [
     {
-      "regex": "local",
-      "nxdomain": true
-    },
-    {
-      "regex": ".*\\.example.com",
-      "upstream": "8.8.8.8"
-    },
-    {
-      "regex": ".*\\.localdomain",
-      "upstream": "10.0.0.1"
-    },
-    {
-      "regex": ".*\\.(office\\.lan|myoffice\\.com)",
-      "upstream": "10.0.0.1"
+      "host": "127.0.0.1",
+      "port": 53,
+      "default_upstream": "1.1.1.1",
+      "upstreams": [
+        {
+          "regex": "local",
+          "nxdomain": true
+        },
+        {
+          "regex": ".*\\.example.com",
+          "upstream": "8.8.8.8"
+        },
+        {
+          "regex": ".*\\.localdomain",
+          "upstream": "10.0.0.1"
+        },
+        {
+          "regex": ".*\\.(office\\.lan|myoffice\\.com)",
+          "upstream": "10.0.0.1"
+        }
+      ]
     }
   ]
 }
@@ -152,6 +158,11 @@ the same machine.
 
 You may choose to run in verbose mode by specifying `-v` this will output each incoming
 DNS request and the determined forwarding DNS server.
+
+### Multiple Servers
+
+The configuration allows you to run multiple DNS servers on different interfaces and ports
+and have different rules for them.
 
 ### Additional Notes
 

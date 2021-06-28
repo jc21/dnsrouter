@@ -19,14 +19,17 @@ var (
 )
 
 // DNSHandler ...
-type DNSHandler struct{}
+type DNSHandler struct {
+	ServerIndex int
+	RouterConf  config.RouterConfig
+}
 
 func initMemCache() {
 	memCache = cache.New(30*time.Second, 1*time.Minute)
 }
 
 // ServeDNS will handle incoming dns requests and forward them onwards
-func (hndlr *DNSHandler) ServeDNS(w dns.ResponseWriter, r *dns.Msg) {
+func (h *DNSHandler) ServeDNS(w dns.ResponseWriter, r *dns.Msg) {
 	once.Do(initMemCache)
 	c := new(dns.Client)
 
@@ -36,16 +39,16 @@ func (hndlr *DNSHandler) ServeDNS(w dns.ResponseWriter, r *dns.Msg) {
 	domain := msg.Question[0].Name
 
 	// See if we have this cached
-	cacheKey := fmt.Sprintf("%s-%d", dns.Fqdn(domain), msg.Question[0].Qtype)
+	cacheKey := fmt.Sprintf("%d-%s-%d", h.ServerIndex, dns.Fqdn(domain), msg.Question[0].Qtype)
 	cacheItem, found := memCache.Get(cacheKey)
 
 	if found {
 		// Using our cached answer
 		msg.Answer = cacheItem.([]dns.RR)
-		logger.Debug("DNSLookup %s -> cached", domain)
+		logger.Debug("[%d] DNSLookup %s -> cached", h.ServerIndex, domain)
 	} else {
-		upstreamHost := getDNSServerFromLookup(domain)
-		logger.Debug("DNSLookup %s -> %s", domain, upstreamHost)
+		upstreamHost := getDNSServerFromLookup(h.RouterConf, domain)
+		logger.Debug("[%d] DNSLookup %s -> %s", h.ServerIndex, domain, upstreamHost)
 
 		if upstreamHost == "nxdomain" {
 			// Return nxdomain asap
@@ -77,8 +80,7 @@ func (hndlr *DNSHandler) ServeDNS(w dns.ResponseWriter, r *dns.Msg) {
 	}
 }
 
-func getDNSServerFromLookup(domain string) string {
-	conf := config.GetRouterConfig()
+func getDNSServerFromLookup(conf config.RouterConfig, domain string) string {
 	dnsServer := conf.DefaultUpstream
 
 	if len(conf.Upstreams) > 0 {
