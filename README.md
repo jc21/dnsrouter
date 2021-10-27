@@ -15,6 +15,9 @@ example `dnsmasq` will send DNS requests to all servers regardless
 of the rules and when an upstream DNS server is dropping connections
 it will hang the whole server.
 
+This service can also answer with internal DNS entries, avoiding the
+need for host file modifications.
+
 ## Installation
 
 Only the following methods are available for installation. For all other systems, see Building below.
@@ -80,6 +83,15 @@ Given the following configuration:
       "host": "127.0.0.1",
       "port": 53,
       "default_upstream": "1.1.1.1",
+      "internal": [
+        {
+          "regex": "mail.example.com",
+          "A": "192.168.0.10",
+          "AAAA": "2001:db8::1234:5678",
+          "TXT": "omgyesitworked",
+          "MX": "10 mailserver1.example.com.\n20 mailserver2.example.com."
+        }
+      ],
       "upstreams": [
         {
           "regex": "local",
@@ -106,7 +118,7 @@ Given the following configuration:
 *Requesting DNS for `test.example.com`*
 
 1. DNS client connects to `dnsrouter` and asks for `test.example.com`
-2. `dnsrouter` matches with the 2nd rule
+2. `dnsrouter` matches with the 2nd _upstream_ rule
 3. `dnsrouter` forwards the DNS question to upstream DNS server `8.8.8.8`
 4. `dnsrouter` returns the answer to the DNS client
 
@@ -120,7 +132,7 @@ Given the following configuration:
 *Requesting DNS for `local`*
 
 1. DNS client connects to `dnsrouter` and asks for `local`
-2. `dnsrouter` matches with the 1st rule
+2. `dnsrouter` matches with the 1st _upstream_ rule
 3. `dnsrouter` returns an error to the client with NXDOMAIN
 
 *Requesting DNS for `myoffice.com`*
@@ -131,6 +143,12 @@ Given the following configuration:
 4. `dnsrouter` returns the answer to the DNS client
 
 _Note: This is a trick example. The domain matching regex will match `*.myoffice.com` but not `myoffice.com`_
+
+*Requesting DNS for `mail.example.com`*
+
+1. DNS client connects to `dnsrouter` and asks for `mail.example.com`
+2. `dnsrouter` matches with the 1st _internal_ rule
+3. `dnsrouter` returns the answer value to the DNS client with the A/AAAA/MX/TXT record as requested
 
 ## Building
 
