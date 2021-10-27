@@ -24,10 +24,11 @@ type ServerConfig struct {
 
 // RouterConfig is the settings that exist in the config file
 type RouterConfig struct {
-	Host            string           `json:"host"`
-	Port            int              `json:"port"`
-	Upstreams       []UpstreamConfig `json:"upstreams"`
-	DefaultUpstream string           `json:"default_upstream"`
+	Host            string                 `json:"host"`
+	Port            int                    `json:"port"`
+	Upstreams       []UpstreamConfig       `json:"upstreams"`
+	InternalRecords []InternalRecordConfig `json:"internal"`
+	DefaultUpstream string                 `json:"default_upstream"`
 }
 
 // LogConfig is self explanatatory
@@ -41,6 +42,16 @@ type UpstreamConfig struct {
 	HostRegex     string         `json:"regex"`
 	DNSServer     string         `json:"upstream"`
 	NXDomain      bool           `json:"nxdomain"`
+	CompiledRegex *regexp.Regexp `json:"-"`
+}
+
+// InternalRecordConfig is a item for internal dns record configuration
+type InternalRecordConfig struct {
+	HostRegex     string         `json:"regex"`
+	A             string         `json:"A"`
+	AAAA          string         `json:"AAAA"`
+	MX            string         `json:"MX"`
+	TXT           string         `json:"TXT"`
 	CompiledRegex *regexp.Regexp `json:"-"`
 }
 
@@ -125,16 +136,22 @@ func (s *ServerConfig) Load() {
 // CompileRegexes prepares the regexes given ahead of their usage
 func (s *ServerConfig) CompileRegexes() {
 	regexCount := 0
+	iRegexCount := 0
 	if len(s.Servers) > 0 {
 		for sIdx, server := range s.Servers {
 			for rIdx, upstream := range server.Upstreams {
 				s.Servers[sIdx].Upstreams[rIdx].CompiledRegex = regexp.MustCompile(fmt.Sprintf("^%s\\.$", upstream.HostRegex))
 				regexCount++
 			}
+
+			for iIdx, internalRecord := range server.InternalRecords {
+				s.Servers[sIdx].InternalRecords[iIdx].CompiledRegex = regexp.MustCompile(fmt.Sprintf("^%s\\.$", internalRecord.HostRegex))
+				iRegexCount++
+			}
 		}
 	}
 
-	logger.Info("Compiled %d upstream regexes from %d servers", regexCount, len(s.Servers))
+	logger.Info("Compiled %d upstream regexes and %d internal record regexes from %d servers", regexCount, iRegexCount, len(s.Servers))
 }
 
 // Check will ensure that the servers defined are not duplicated

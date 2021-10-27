@@ -8,6 +8,15 @@
 			"host": "127.0.0.1",
 			"port": 53,
 			"default_upstream": "1.1.1.1",
+			"internal": [
+				{
+					"regex": "mail.example.com",
+					"A": "192.168.0.10",
+					"AAAA": "2001:db8::1234:5678",
+					"TXT": "omgyesitworked",
+					"MX": "10 mailserver1.example.com.\n20 mailserver2.example.com."
+				}
+			],
 			"upstreams": [
 				{
 					"regex": "local",
