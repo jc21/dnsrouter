@@ -36,7 +36,7 @@ git checkout jc21/dnsrouter
 brew install --build-from-source dnsrouter
 
 # Edit config which is located at:
-# /usr/local/etc/dnsrouter/config.json
+# /opt/homebrew/etc/dnsrouter/config.json
 
 sudo brew services start dnsrouter
 
