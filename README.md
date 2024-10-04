@@ -44,12 +44,12 @@ sudo brew services start dnsrouter
 git checkout master
 ```
 
-### Centos 8/Stream
+### RHEL based distros
 
 RPM's are built [here](https://github.com/jc21-rpm/dnsrouter) and hosted [here](https://yum.jc21.com).
 
 ```bash
-sudo yum localinstall https://yum.jc21.com/jc21-yum.rpm
+sudo yum localinstall https://yum.jc21.com/jc21.rpm
 sudo yum install dnsrouter
 
 # Edit config which is located at:
