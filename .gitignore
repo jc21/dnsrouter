@@ -1,2 +1,4 @@
 bin
 config.json
+cover.out
+test-results

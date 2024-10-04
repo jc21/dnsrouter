@@ -1,16 +1,17 @@
 package config
 
 import (
-	"dnsrouter/internal/logger"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net"
 	"os"
 	"path"
 	"regexp"
 	"strconv"
 	"strings"
+
+	"dnsrouter/internal/logger"
 )
 
 // DefaultUpstream is a system wide default
@@ -108,7 +109,7 @@ func (s *ServerConfig) Load() {
 	}
 
 	if ok {
-		contents, err = ioutil.ReadAll(jsonFile)
+		contents, err = io.ReadAll(jsonFile)
 		if err != nil {
 			logger.Warn("Config file could not be read: %v", err.Error())
 			ok = false
@@ -158,7 +159,7 @@ func (s *ServerConfig) CompileRegexes() {
 func (s *ServerConfig) Check() {
 	combinations := make([]string, 0)
 
-	if s.Servers == nil || len(s.Servers) == 0 {
+	if len(s.Servers) == 0 {
 		s.Servers = []RouterConfig{
 			newDefaultRouter(),
 		}
@@ -176,9 +177,9 @@ func (s *ServerConfig) Check() {
 			if contains(combinations, thisCombination) {
 				logger.Error("ServerConfigError", fmt.Errorf("Cannot start 2 servers with the same interface/port: %s", thisCombination))
 				os.Exit(1)
-			} else {
-				combinations = append(combinations, thisCombination)
 			}
+
+			combinations = append(combinations, thisCombination)
 		}
 	}
 }

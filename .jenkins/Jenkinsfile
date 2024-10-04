@@ -14,16 +14,19 @@ pipeline {
 		label 'docker'
 	}
 	stages {
-		stage('Test') {
-			steps {
-				withCredentials([usernamePassword(credentialsId: 'oss-index-token', passwordVariable: 'NANCY_TOKEN', usernameVariable: 'NANCY_USER')]) {
-					sh './scripts/ci/test.sh'
-				}
-			}
-		}
 		stage('Build') {
 			steps {
-				sh './scripts/ci/build.sh'
+				sh './scripts/ci/lint.sh'
+				sh './scripts/ci/unit.sh'
+				sh './scripts/build.sh'
+			}
+			post {
+				always {
+					dir('test-results') {
+						archiveArtifacts(artifacts: 'coverage.html', allowEmptyArchive: true)
+						junit allowEmptyResults: true, testResults: 'unit-results.xml'
+					}
+				}
 			}
 		}
 		stage('Publish') {
@@ -44,13 +47,8 @@ pipeline {
 		}
 	}
 	post {
-		success {
-			juxtapose event: 'success'
-			sh 'figlet "SUCCESS"'
-		}
-		failure {
-			juxtapose event: 'failure'
-			sh 'figlet "FAILURE"'
+		always {
+			printResult(true)
 		}
 	}
 }
