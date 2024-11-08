@@ -24,15 +24,32 @@ var (
 type DNSHandler struct {
 	ServerIndex int
 	RouterConf  config.RouterConfig
-}
-
-func initMemCache() {
-	memCache = cache.New(30*time.Second, 1*time.Minute)
+	CacheConf   config.CacheConfig
 }
 
 // ServeDNS will handle incoming dns requests and forward them onwards
 func (h *DNSHandler) ServeDNS(w dns.ResponseWriter, r *dns.Msg) {
-	once.Do(initMemCache)
+	// Setup a cache, if enabled
+	once.Do(func() {
+		if !h.CacheConf.Disabled {
+			var minSecs int64 = 15
+			if h.CacheConf.Min > 0 {
+				minSecs = h.CacheConf.Min
+			}
+			var maxSecs int64 = 30
+			if h.CacheConf.Max > 0 {
+				maxSecs = h.CacheConf.Max
+			}
+			if maxSecs < minSecs {
+				maxSecs = minSecs
+			}
+			memCache = cache.New(
+				time.Duration(minSecs)*time.Second,
+				time.Duration(maxSecs)*time.Second,
+			)
+		}
+	})
+
 	c := new(dns.Client)
 
 	msg := dns.Msg{}
@@ -42,7 +59,12 @@ func (h *DNSHandler) ServeDNS(w dns.ResponseWriter, r *dns.Msg) {
 
 	// See if we have this cached
 	cacheKey := fmt.Sprintf("%d-%s-%d", h.ServerIndex, dns.Fqdn(domain), msg.Question[0].Qtype)
-	cacheItem, found := memCache.Get(cacheKey)
+
+	var cacheItem interface{}
+	found := false
+	if memCache != nil {
+		cacheItem, found = memCache.Get(cacheKey)
+	}
 
 	if found {
 		// Using our cached answer
@@ -78,7 +100,9 @@ func (h *DNSHandler) ServeDNS(w dns.ResponseWriter, r *dns.Msg) {
 				} else {
 					msg.Answer = upstreamResponse.Answer
 					// Cache it
-					memCache.Set(cacheKey, upstreamResponse.Answer, cache.DefaultExpiration)
+					if memCache != nil {
+						memCache.Set(cacheKey, upstreamResponse.Answer, cache.DefaultExpiration)
+					}
 				}
 			}
 		}

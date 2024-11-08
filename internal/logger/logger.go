@@ -130,6 +130,7 @@ var logLevels = map[Level]string{
 }
 
 func (l *Logger) logLevel(logLevel Level, format string, args ...interface{}) {
+	fmt.Printf("logLevel: %d, l.LogThreshold: %d\n", logLevel, l.LogThreshold)
 	if logLevel < l.LogThreshold {
 		return
 	}

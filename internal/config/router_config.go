@@ -21,6 +21,14 @@ const DefaultUpstream = "1.1.1.1"
 type ServerConfig struct {
 	Log     LogConfig      `json:"log"`
 	Servers []RouterConfig `json:"servers"`
+	Cache   CacheConfig    `json:"cache"`
+}
+
+// CacheConfig is self explanatatory
+type CacheConfig struct {
+	Disabled bool  `json:"disabled"`
+	Min      int64 `json:"min"`
+	Max      int64 `json:"max"`
 }
 
 // RouterConfig is the settings that exist in the config file
@@ -63,12 +71,22 @@ func NewServerConfig() ServerConfig {
 			Format: "nice",
 			Level:  "info",
 		},
+		Cache: CacheConfig{
+			Disabled: false,
+			Min:      15,
+			Max:      30,
+		},
 		Servers: []RouterConfig{},
 	}
 	s.Load()
 	s.Check()
 	initLogger()
 	s.CompileRegexes()
+
+	// Print out the config for debugging
+	j, _ := json.MarshalIndent(s, "", " ")
+	logger.Debug("%s", j)
+
 	return s
 }
 
@@ -131,6 +149,10 @@ func (s *ServerConfig) Load() {
 
 	if !ok {
 		logger.Warn("Falling back to default configuration")
+	}
+
+	if s.Cache.Disabled {
+		logger.Warn("Local cache is disabled")
 	}
 }
 
