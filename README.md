@@ -28,12 +28,16 @@ Homebrew won't accept this package until it has higher reputation (stars, forks)
 you'll have to use the development Formula and rebuild it to install it:
 
 ```bash
+export HOMEBREW_NO_INSTALL_FROM_API=1
 brew update
+brew tap --force homebrew/core
 cd $(brew --repo homebrew/core)
 git remote add jc21 https://github.com/jc21/homebrew-core.git
 git fetch --all
 git checkout jc21/dnsrouter
 brew install --build-from-source dnsrouter
+# and if you need to rebuild:
+brew reinstall --build-from-source dnsrouter
 
 # Edit config which is located at:
 # /opt/homebrew/etc/dnsrouter/config.json
@@ -184,6 +188,6 @@ and have different rules for them.
 
 ### Additional Notes
 
-1. DNS Answers are cached for 30 seconds in memory, regardless of upstream TTL
+1. Cache, if enabled, won't respect the TTL of the record, but is controlled internally
 2. Regex's are prefixed with `^` and appended with `$` so there is no need to add them
 3. Performance on a desktop used heavily appears to be great. Has not been tested for an entire office.
