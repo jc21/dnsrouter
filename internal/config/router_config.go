@@ -15,7 +15,7 @@ import (
 )
 
 // DefaultUpstream is a system wide default
-const DefaultUpstream = "1.1.1.1"
+var DefaultUpstream = []string{"1.1.1.1"}
 
 // ServerConfig ...
 type ServerConfig struct {
@@ -37,7 +37,7 @@ type RouterConfig struct {
 	Port            int                    `json:"port"`
 	Upstreams       []UpstreamConfig       `json:"upstreams"`
 	InternalRecords []InternalRecordConfig `json:"internal"`
-	DefaultUpstream string                 `json:"default_upstream"`
+	DefaultUpstream []string               `json:"default_upstream"`
 }
 
 // LogConfig is self explanatatory

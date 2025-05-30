@@ -7,7 +7,7 @@ cd "$PROJECT_DIR"
 
 if ! command -v golangci-lint &>/dev/null; then
 	echo -e "${YELLOW}Installing golangci-lint ...${RESET}"
-	go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+	go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest
 fi
 
 if ! command -v govulncheck &>/dev/null; then

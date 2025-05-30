@@ -78,31 +78,38 @@ func (h *DNSHandler) ServeDNS(w dns.ResponseWriter, r *dns.Msg) {
 			msg.Answer = internalAnswer
 		} else {
 			// use upstream next
-			upstreamHost := getDNSServerFromLookup(h.RouterConf, domain)
-			logger.Debug("[%d] DNSLookup %s %s -> %s", h.ServerIndex, domain, getRecordTypeString(msg.Question[0].Qtype), upstreamHost)
+			upstreamHosts := getDNSServerFromLookup(h.RouterConf, domain)
 
-			if upstreamHost == "nxdomain" {
-				// Return nxdomain asap
-				msg.SetRcode(r, dns.RcodeNameError)
-			} else {
-				// Forward to the determined upstream dns server
-				m := new(dns.Msg)
-				m.SetQuestion(dns.Fqdn(domain), msg.Question[0].Qtype)
-				m.RecursionDesired = true
+			for upstreamHostIndex, upstreamHost := range upstreamHosts {
+				logger.Debug("[%d] DNSLookup %s %s -> %s", h.ServerIndex, domain, getRecordTypeString(msg.Question[0].Qtype), upstreamHost)
 
-				upstreamResponse, _, err := c.Exchange(m, net.JoinHostPort(upstreamHost, "53"))
-				if upstreamResponse == nil {
-					logger.Error("UpstreamError", err)
-					return
-				}
-
-				if upstreamResponse.Rcode != dns.RcodeSuccess {
-					msg.SetRcode(r, upstreamResponse.Rcode)
+				if upstreamHost == "nxdomain" {
+					// Return nxdomain asap
+					msg.SetRcode(r, dns.RcodeNameError)
 				} else {
-					msg.Answer = upstreamResponse.Answer
-					// Cache it
-					if memCache != nil {
-						memCache.Set(cacheKey, upstreamResponse.Answer, cache.DefaultExpiration)
+					// Forward to the determined upstream dns server
+					m := new(dns.Msg)
+					m.SetQuestion(dns.Fqdn(domain), msg.Question[0].Qtype)
+					m.RecursionDesired = true
+
+					upstreamResponse, _, err := c.Exchange(m, net.JoinHostPort(upstreamHost, "53"))
+					if upstreamResponse == nil {
+						logger.Error("UpstreamError", err)
+						if (len(upstreamHosts) - 1) > upstreamHostIndex {
+							logger.Debug("[%d] DNSLookupRetry %s -> %s", upstreamHost, upstreamHosts[upstreamHostIndex+1])
+							continue
+						}
+						return
+					}
+
+					if upstreamResponse.Rcode != dns.RcodeSuccess {
+						msg.SetRcode(r, upstreamResponse.Rcode)
+					} else {
+						msg.Answer = upstreamResponse.Answer
+						// Cache it
+						if memCache != nil {
+							memCache.Set(cacheKey, upstreamResponse.Answer, cache.DefaultExpiration)
+						}
 					}
 				}
 			}
@@ -114,20 +121,22 @@ func (h *DNSHandler) ServeDNS(w dns.ResponseWriter, r *dns.Msg) {
 	}
 }
 
-func getDNSServerFromLookup(conf config.RouterConfig, domain string) string {
-	dnsServer := conf.DefaultUpstream
+func getDNSServerFromLookup(conf config.RouterConfig, domain string) []string {
+	var dnsServer []string
 
 	if len(conf.Upstreams) > 0 {
 		for _, upstream := range conf.Upstreams {
 			if found := upstream.CompiledRegex.MatchString(domain); found {
 				if upstream.NXDomain {
-					dnsServer = "nxdomain"
+					dnsServer = []string{"nxdomain"}
 				} else {
-					dnsServer = upstream.DNSServer
+					dnsServer = []string{upstream.DNSServer}
 				}
 				break
 			}
 		}
+	} else {
+		dnsServer = conf.DefaultUpstream
 	}
 
 	return dnsServer

@@ -86,7 +86,10 @@ Given the following configuration:
     {
       "host": "127.0.0.1",
       "port": 53,
-      "default_upstream": "1.1.1.1",
+      "default_upstream": [
+        "1.1.1.1",
+        "1.0.0.1"
+      ],
       "internal": [
         {
           "regex": "mail.example.com",
