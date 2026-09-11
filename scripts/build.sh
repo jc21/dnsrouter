@@ -24,6 +24,7 @@ echo "  GOPROXY:       ${GOPROXY:-}"
 cleanup() {
 	docker run --rm -v "$(pwd):/app" "$GOTOOLS_IMAGE" chown -R "$(id -u):$(id -g)" /app/bin
 }
+trap cleanup EXIT
 
 build() {
 	echo -e "${BLUE}❯ ${CYAN}Building for ${YELLOW}${1}-${2} ...${RESET}"
@@ -59,9 +60,4 @@ build "linux" "arm"
 build "openbsd" "amd64"
 build "windows" "amd64"
 
-cleanup
-
 echo -e "${BLUE}❯ ${GREEN}build completed${RESET}"
-exit 0
-
-trap cleanup EXIT

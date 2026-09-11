@@ -20,18 +20,3 @@ type Config struct {
 	LogThreshold Level
 	Formatter    string
 }
-
-// Interface for a logger
-type Interface interface {
-	GetLogLevel() Level
-	Debug(format string, args ...any)
-	Info(format string, args ...any)
-	Warn(format string, args ...any)
-	Error(errorClass string, err error, args ...any)
-	Errorf(errorClass, format string, err error, args ...any)
-}
-
-// ConfigurableLogger is an interface for a logger that can be configured
-type ConfigurableLogger interface {
-	Configure(c *Config) error
-}

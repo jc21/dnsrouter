@@ -101,6 +101,25 @@ func TestError(t *testing.T) {
 	assert.Contains(t, buf.String(), "this is a test error")
 }
 
+func TestError_MessageContainingPercentIsNotMangled(t *testing.T) {
+	buf := new(bytes.Buffer)
+	log.SetOutput(buf)
+	defer func() {
+		log.SetOutput(os.Stderr)
+	}()
+
+	assert.NoError(t, Configure(&Config{
+		LogThreshold: ErrorLevel,
+	}))
+
+	// Regression test: err.Error() must never be treated as a Printf format string.
+	// A literal "%" in an error message (file paths, IPv6 zone IDs, driver errors, etc.)
+	// used to be corrupted by fmt.Sprintf's missing-verb handling.
+	Error("TestErrorClass", errors.New("disk usage at 90% capacity for /export/vol on host"))
+	assert.Contains(t, buf.String(), "disk usage at 90% capacity for /export/vol on host")
+	assert.NotContains(t, buf.String(), "MISSING")
+}
+
 func TestConfigure(t *testing.T) {
 	type args struct {
 		c *Config

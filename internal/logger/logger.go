@@ -136,18 +136,17 @@ func (l *Logger) logLevel(logLevel Level, format string, args ...any) {
 	}
 
 	errorClass := ""
+	var stringMessage string
 	if logLevel == ErrorLevel {
-		// First arg is the errorClass
+		// For errors, "format" is actually the error's own message text (see Error()
+		// below), not a format string, and args[0] is the errorClass. Treating error
+		// text as a Printf format would corrupt any message containing a literal "%".
 		// nolint: revive
 		errorClass = args[0].(string)
-		if len(args) > 1 {
-			args = args[1:]
-		} else {
-			args = []any{}
-		}
+		stringMessage = format
+	} else {
+		stringMessage = fmt.Sprintf(format, args...)
 	}
-
-	stringMessage := fmt.Sprintf(format, args...)
 
 	if l.Formatter == "json" {
 		// JSON Log Format
@@ -174,6 +173,8 @@ func (l *Logger) logLevel(logLevel Level, format string, args ...any) {
 		case ErrorLevel:
 			colorLevel = colorRed
 			stringMessage = fmt.Sprintf("%s: %s", errorClass, stringMessage)
+		default:
+			colorLevel = colorWhite
 		}
 
 		t := time.Now()

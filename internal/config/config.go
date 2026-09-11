@@ -30,8 +30,11 @@ func Init(commit, version *string) {
 	Version = *version
 	Commit = *commit
 
-	// nolint: errcheck, gosec
-	c.FromEnv().To(&appArguments)
+	if err := c.FromEnv().To(&appArguments); err != nil {
+		// Config file/logger isn't set up yet at this point, so this can only
+		// go to stderr; it's still surfaced rather than silently discarded.
+		fmt.Fprintf(os.Stderr, "warning: could not apply environment variable overrides: %s\n", err.Error())
+	}
 	arg.MustParse(&appArguments)
 
 	serverConfig = NewServerConfig()
@@ -85,11 +88,11 @@ func writeConfig() {
 	filename := getConfigFilename()
 	content, _ := json.MarshalIndent(serverConfig, "", " ")
 
-	// Make sure the parent folder exists
+	// Make sure the parent folder exists. Mode is restrictive (owner rwx, group rx)
+	// since the config file it will hold is written 0600.
 	folder := path.Dir(filename)
 
-	// nolint: gosec
-	dirErr := os.MkdirAll(folder, os.ModePerm)
+	dirErr := os.MkdirAll(folder, 0o750)
 	if dirErr != nil {
 		logger.Error("ConfigWriteError", fmt.Errorf("could not create config folder: %s: %s", path.Dir(filename), dirErr.Error()))
 		os.Exit(1)

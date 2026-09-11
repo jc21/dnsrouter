@@ -1,7 +1,7 @@
 ---
 version: "2"
 run:
-  go: "1.24"
+  go: "1.27"
   # If set, we pass it to "go list -mod={option}". From "go help modules":
   # If invoked with -mod=readonly, the go command is disallowed from the
   # implicit automatic updating of go.mod described above. Instead, it

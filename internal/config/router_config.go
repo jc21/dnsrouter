@@ -137,8 +137,16 @@ func (s *ServerConfig) Load() {
 	if ok {
 		err = json.Unmarshal(contents, &s)
 		if err != nil {
-			logger.Warn("Config file looks damaged")
-			ok = false
+			// The file exists but is not valid JSON. Since this tool's entire purpose is
+			// enforcing the routing rules in that file, silently falling back to the
+			// default configuration (which forwards everything to the public default
+			// upstream) would be a silent, security-relevant behavior change. Fail loudly
+			// instead so a config typo can't quietly leak traffic that was meant to be
+			// routed privately.
+			logger.Error("ConfigParseError", fmt.Errorf("config file %s is not valid JSON: %w", filename, err))
+			// nolint: errcheck, gosec
+			jsonFile.Close()
+			os.Exit(1)
 		}
 	}
 
@@ -148,7 +156,7 @@ func (s *ServerConfig) Load() {
 	}
 
 	if !ok {
-		logger.Warn("Falling back to default configuration")
+		logger.Warn("No config file present, using default configuration")
 	}
 
 	if s.Cache.Disabled {
@@ -156,25 +164,54 @@ func (s *ServerConfig) Load() {
 	}
 }
 
-// CompileRegexes prepares the regexes given ahead of their usage
+// CompileRegexes prepares the regexes given ahead of their usage. A malformed regex in the
+// config file is treated as a fatal configuration error rather than a panic: user-supplied
+// data (config) should never be able to crash the process with an unrecovered panic.
 func (s *ServerConfig) CompileRegexes() {
 	regexCount := 0
 	iRegexCount := 0
 	if len(s.Servers) > 0 {
 		for sIdx, server := range s.Servers {
 			for rIdx, upstream := range server.Upstreams {
-				s.Servers[sIdx].Upstreams[rIdx].CompiledRegex = regexp.MustCompile(fmt.Sprintf("^%s\\.$", upstream.HostRegex))
+				re, err := compileHostRegex(upstream.HostRegex)
+				if err != nil {
+					logger.Error("ConfigRegexError", fmt.Errorf("invalid upstream regex %q: %w", upstream.HostRegex, err))
+					os.Exit(1)
+				}
+				s.Servers[sIdx].Upstreams[rIdx].CompiledRegex = re
 				regexCount++
 			}
 
 			for iIdx, internalRecord := range server.InternalRecords {
-				s.Servers[sIdx].InternalRecords[iIdx].CompiledRegex = regexp.MustCompile(fmt.Sprintf("^%s\\.$", internalRecord.HostRegex))
+				re, err := compileHostRegex(internalRecord.HostRegex)
+				if err != nil {
+					logger.Error("ConfigRegexError", fmt.Errorf("invalid internal record regex %q: %w", internalRecord.HostRegex, err))
+					os.Exit(1)
+				}
+				s.Servers[sIdx].InternalRecords[iIdx].CompiledRegex = re
+
+				if ip := internalRecord.A; ip != "" && net.ParseIP(ip) == nil {
+					logger.Warn("Internal record %q has an invalid A value %q; it will be ignored", internalRecord.HostRegex, ip)
+					s.Servers[sIdx].InternalRecords[iIdx].A = ""
+				}
+				if ip := internalRecord.AAAA; ip != "" && net.ParseIP(ip) == nil {
+					logger.Warn("Internal record %q has an invalid AAAA value %q; it will be ignored", internalRecord.HostRegex, ip)
+					s.Servers[sIdx].InternalRecords[iIdx].AAAA = ""
+				}
+
 				iRegexCount++
 			}
 		}
 	}
 
 	logger.Info("Compiled %d upstream regexes and %d internal record regexes from %d servers", regexCount, iRegexCount, len(s.Servers))
+}
+
+// compileHostRegex anchors a configured host regex to a full match against a
+// trailing-dot-terminated FQDN. Matching is done against a lower-cased domain
+// (see server.ServeDNS), so this doesn't need a case-insensitivity flag itself.
+func compileHostRegex(hostRegex string) (*regexp.Regexp, error) {
+	return regexp.Compile(fmt.Sprintf("^%s\\.$", hostRegex))
 }
 
 // Check will ensure that the servers defined are not duplicated
