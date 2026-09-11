@@ -76,6 +76,30 @@ Then it's up to you to edit this file to your liking. The default location is `/
 
 Refer to the `config.json.example` file for upstream routing examples.
 
+### Cache
+
+Upstream answers are cached in memory to reduce repeated lookups. This is controlled by
+an optional top-level `cache` section:
+
+```json
+{
+  "cache": {
+    "disabled": false,
+    "min": 15,
+    "max": 30
+  },
+  "servers": [ ... ]
+}
+```
+
+- `disabled` - set to `true` to turn caching off entirely (default: `false`)
+- `min` / `max` - each cached answer expires after a random number of seconds between
+  `min` and `max` (default: `15` / `30`). This is jittered per entry so cached answers
+  populated around the same time don't all expire in lockstep.
+
+Note this cache does not respect the actual TTL of the upstream record - see Additional
+Notes below.
+
 ### Examples
 
 Given the following configuration:
@@ -154,6 +178,11 @@ _Note: This is a trick example. The domain matching regex will match `*.myoffice
 2. `dnsrouter` matches with the 1st _internal_ rule
 3. `dnsrouter` returns the answer value to the DNS client with the A/AAAA/MX/TXT record as requested
 
+_Note: once a domain matches an internal rule it's treated as authoritative for that name.
+Querying a record type the rule doesn't define (e.g. `CNAME` here) returns an empty/NODATA
+answer rather than falling through to an upstream server - internal names are never leaked
+upstream._
+
 ## Building
 
 ```bash
@@ -162,7 +191,8 @@ cd dnsrouter
 ./scripts/build.sh
 ```
 
-Binary will output to `bin/dnsrouter`
+Binaries for each supported OS/architecture are cross-compiled and output to
+`bin/dnsrouter-v<version>_<os>_<arch>` (e.g. `bin/dnsrouter-v0.1.0_linux_amd64`).
 
 ## Running
 
@@ -173,6 +203,10 @@ Binary will output to `bin/dnsrouter`
 ```
 
 Be aware that running on port `53` will require root permissions on Linux systems.
+
+Each configured server listens on both UDP and TCP on the given host/port (TCP is used as a
+fallback when an answer is too large for a single UDP packet), so make sure both are
+reachable through any firewall.
 
 After the service is running you just have to use it. Modify your network interface's DNS
 servers (or /etc/resolv.conf) to use the IP running `dnsrouter` ie `127.0.0.1` if it's
