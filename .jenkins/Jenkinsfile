@@ -1,6 +1,9 @@
 @Library('jc21') _
 
 pipeline {
+	triggers {
+		cron('0 22 1 * *')
+	}
 	options {
 		buildDiscarder(logRotator(numToKeepStr: '5'))
 		disableConcurrentBuilds()
